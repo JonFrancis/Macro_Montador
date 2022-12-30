@@ -269,6 +269,7 @@ void primeira_passada(){
     um cabecalho e o caso onde nao possui, para eses dois casos o tratamento eh diferente, pois temos que substituir as variaveis dentro pelas variaveis
     que foram dadas ao chamar a macro e depois adicionar essa macro no codigo.
 */
+/*teste*/
 void macros(){
     string novo_arq;
     int flag_teste = 0;
