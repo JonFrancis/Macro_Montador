@@ -36,6 +36,11 @@ bool e = 0;
 map<string, string> dicionario_EQU;
 map<string, string> cause5hora;
 
+/*
+    Funcao responsavel por converter uma string para maiusculo
+
+    Esse funcao eh chamada para formatar todas as palavras(comando, label, chamadas) para que nao tenha problema com letras minusculas e maiusculas
+*/
 string strupr(string upper){
     string aux = "";
     for(int i = 0; i < upper.size(); i++){
@@ -44,6 +49,10 @@ string strupr(string upper){
     return aux;
 }
 
+/*
+    Funcao responsavel por gerar o arquivo, sempre eh a ultima funcao chamada, a primeira string que le recebe contem o nome do arquivo, a segunda eh o
+    tipo(.PRE, .MCR e .OBJ) e o ultimo argumento eh a string com o programa completo
+*/
 void cria_arquivo(string nome, string formato, string texto){
     FILE *arq;
     char num[80], text[1000];
@@ -64,6 +73,11 @@ void cria_arquivo(string nome, string formato, string texto){
     fclose(arq);
 }
 
+/*
+    A funcao prog eh sempre a primeira funcao chamada, ela é responsavel por formatar os dados lidos do arquivo, esses dados sao colocados
+    em um vector<vector<string>> onde cada linha eh um vetor dentro de uma matriz e cada palavra eh uma string dentro desse vetor,
+    assim facilitando para as outras funcoes.
+*/
 void prog(FILE *program){
     while(!feof(program)){
         vector<string> linha_comando = {};
@@ -99,6 +113,10 @@ void prog(FILE *program){
     }
 }
 
+/*
+    Essa eh a funcao que faz o pré-processamento, ela identifica todos os EQU e subistitui por seu valor em todas as chamadas, identifica todos os IF e
+    elimina o cabecalho em caso de do IF e a linha seguinte no caso do IF ser negado, para o caso do IF ser aceito ele elimnia apenas a linha do IF.
+*/
 void pre_processamento(){
     int flag_section = 0, flag_if = 0;
     string novo_arq;
@@ -243,6 +261,14 @@ void primeira_passada(){
 
 }
 
+/*
+    Essa eh a funcao criada para verificar as macros, quando uma macro eh gerada ela eh armazenada em um variavel cause5hora que eh um map<string, string>
+    onde sua label eh usada para localizar esse map e o conteudo eh armazenado na string dentro do map.
+
+    Em seguida verifica o resto do codigo, onde procura uma chamada para esse macro, e em seguida subistitui ela, existe dois casos, onde a macro possui
+    um cabecalho e o caso onde nao possui, para eses dois casos o tratamento eh diferente, pois temos que substituir as variaveis dentro pelas variaveis
+    que foram dadas ao chamar a macro e depois adicionar essa macro no codigo.
+*/
 void macros(){
     string novo_arq;
     int flag_teste = 0;
