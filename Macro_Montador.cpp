@@ -41,6 +41,15 @@ map<string, string> cause5hora;
 
     Esse funcao eh chamada para formatar todas as palavras(comando, label, chamadas) para que nao tenha problema com letras minusculas e maiusculas
 */
+
+string concat(vector<string> vect){
+    string ret;
+    for(int i = 0; i < vect.size(); i++){
+        ret += vect[i] + " ";
+    }
+    return ret;
+}
+
 string strupr(string upper){
     string aux = "";
     for(int i = 0; i < upper.size(); i++){
@@ -78,7 +87,7 @@ void cria_arquivo(string nome, string formato, string texto){
     em um vector<vector<string>> onde cada linha eh um vetor dentro de uma matriz e cada palavra eh uma string dentro desse vetor,
     assim facilitando para as outras funcoes.
 */
-void prog(FILE *program){
+void prog(FILE *program, int tipo){
     while(!feof(program)){
         vector<string> linha_comando = {};
         char linha[100];
@@ -91,11 +100,12 @@ void prog(FILE *program){
             if(result[i] == ';') break;
             if(result[i] != ' ' && result[i] != '\n' && result[i] != ','){
                 exemplo += result[i];
-                if(result[i] == ':'){
+                if(result[i] == ':' && tipo == 3){
                     dois_pontos++;
                     if(dois_pontos > 1){
-                        char erro[] = "Erro: dois rotulos na mesma linha\n";
-                        cout << erro;
+                        string erro = "Erro Sintático: dois rotulos na mesma linha\nLinha: ";
+                        erro += result;
+                        cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
                         cria_arquivo("Log",".txt",erro);
                         e = 1;
                         return;
@@ -107,7 +117,7 @@ void prog(FILE *program){
                 exemplo = "";
             }
         }
-        if(exemplo != " " && exemplo != "\n" && exemplo != ",")
+        if(exemplo != " " && exemplo != "\n" && exemplo != "," && exemplo != "")
             linha_comando.push_back(strupr(exemplo));
         tudo.push_back(linha_comando);
     }
@@ -121,10 +131,22 @@ void pre_processamento(){
     int flag_section = 0, flag_if = 0;
     string novo_arq;
     for(int  i = 0; i < tudo.size();i++){
+        int teste_flag = 0;
         flag_if = 0;
         for(int j = 0; j < tudo[i].size(); j++){
             if(tudo[i][j] == "SECTION"){
                 flag_section = 1;
+            }
+            else if(tudo[i][j] == "CONST" && tudo[i].size()-1 != j){
+                if(tudo[i][j+1][0] == '0' && tudo[i][j+1][1]== 'X'){
+                    int num = stoi(tudo[i][j+1], nullptr, 16);
+                    novo_arq += tudo[i][j] + " " + to_string(num) + "\n";
+                    teste_flag = 1;
+                }
+            }
+            else if(tudo[i][j][tudo[i][j].size()-1] == ':' && tudo[i].size()-1 == j){
+                novo_arq += string(tudo[i][j]) + ' ';
+                teste_flag = 1;
             }
             else if(tudo[i][j] == "EQU" && flag_section == 0){
                 dicionario_EQU[tudo[i][j-1]] = tudo[i][j+1];
@@ -137,128 +159,15 @@ void pre_processamento(){
             }else if(dicionario_EQU.find(tudo[i][j]+":") != dicionario_EQU.end()){
                 tudo[i][j] = dicionario_EQU[tudo[i][j]+":"];
             }
-            if(flag_section == 1 && flag_if == 0)
+            if(flag_section == 1 && flag_if == 0 && teste_flag == 0)
                 novo_arq += string(tudo[i][j]) + " ";
         }
-        if(flag_section == 1 && flag_if == 0){
+        if(flag_section == 1 && flag_if == 0 && teste_flag == 0){
             novo_arq += "\n";
         }
     }
     novo_arq.pop_back();
     cria_arquivo(nome_prog,".pre",novo_arq);
-}
-
-void segunda_passada(){
-    for(int i = 0; i < tudo.size(); i++){
-        vector<int> aux = {};
-        int comando = 0;
-        for(int j = 0; j < tudo[i].size(); j++){
-            if(tudo[i][j] == "SECTION"){
-                break;
-            }else if(tudo[i][j][tudo[i][j].size()-1]== ':'){
-
-            }else if(comando == 0){
-                pair<int,int> soma = opcode.find(tudo[i][j])->second;
-                if(soma.first == -1){
-                    int k = stoi(tudo[i][j+1], nullptr, 10);
-                    objeto += tudo[i][j+1] + " ";
-                    aux.push_back(k);
-                    break;
-                }else{
-                    if(soma.second == -1){
-                        if(i == tudo.size()-1 || j == tudo[i].size()-2){
-                            objeto += "0 ";
-                            aux.push_back(0);
-                        }else{
-                            for(int k = 0; k < stoi(tudo[i][j+1], nullptr, 10); k++){
-                                aux.push_back(0);
-                                objeto += "0 ";
-                            }
-                        }
-                        break;
-                    }else{
-                        aux.push_back(soma.first);
-                        objeto += to_string(soma.first) + " ";
-                    }
-                }
-                comando = 1;
-            }else if(tudo[i][j] != ""){
-                if(tabela_simbolos.find(tudo[i][j]) == tabela_simbolos.end()){
-                    char erro[] = "Erro: rotulo/dado nao definido\n";
-                    cout << erro;
-                    cria_arquivo("Log",".txt",erro);
-                    e = 1;
-                    return;
-                }
-                else{
-                    objeto += to_string(tabela_simbolos[tudo[i][j]]) + " ";
-                    aux.push_back(tabela_simbolos[tudo[i][j]]);
-                }
-            }
-        }
-        codiu_final.push_back(aux);
-    }
-    cria_arquivo(nome_prog,".obj",objeto);
-}
-
-void primeira_passada(){
-    int k = 0, comando = -1, text = 0;
-    for(int i = 0; i < tudo.size(); i++){
-        for(int j = 0; j < tudo[i].size(); j++){
-            if(tudo[i][j] == "SECTION"){
-                if(tudo[i].size()-1 > j){
-                    if(tudo[i][j+1] == "TEXT")
-                        text++;
-                }
-                break;
-            }else if(tudo[i][j][tudo[i][j].size()-1]== ':'){
-                if(tudo[i][j][0] < 65 || tudo[i][j][0] > 90){
-                    char erro[] = "Erro: erro lexico\n";
-                    cout << erro;
-                    cria_arquivo("Log",".txt",erro);
-                    e = 1;
-                    return;
-                }
-                if(tudo[i][j] != ""){
-                    label_name.push_back(tudo[i][j].substr(0,tudo[i][j].size()-1));
-                    tabela_simbolos[tudo[i][j].substr(0,tudo[i][j].size()-1)] = k;
-                }
-            }else if(comando == -1){
-                if(opcode.find(tudo[i][j]) == opcode.end()){
-                    char erro[] = "Erro: instrucao ou diretiva inexistente\n";
-                    cout << erro;
-                    cria_arquivo("Log",".txt",erro);
-                    e = 1;
-                    return;
-                }
-                contador.push_back(k);
-                pair<int,int> soma = opcode.find(tudo[i][j])->second;
-                if(soma.second == -1){
-                    if(i == tudo.size()-1 || j == tudo[i].size()-2){
-                        k += 1;
-                    }else{
-                        k += stoi(tudo[i][j+1], nullptr, 10);
-                    }
-                }else{
-                    k += soma.second;
-                }
-                comando = 1;
-            }
-        }
-        comando = -1;
-    }
-    if(text == 0){
-        char erro[] = "Erro: section text nao presente\n";
-        cout << erro;
-        cria_arquivo("Log",".txt",erro);
-        e = 1;
-        return;
-    }
-
-    for(int i = 0; i < label_name.size(); i++){
-        cout << label_name[i] << " " << tabela_simbolos[label_name[i]] << endl;
-    }
-
 }
 
 /*
@@ -269,7 +178,6 @@ void primeira_passada(){
     um cabecalho e o caso onde nao possui, para eses dois casos o tratamento eh diferente, pois temos que substituir as variaveis dentro pelas variaveis
     que foram dadas ao chamar a macro e depois adicionar essa macro no codigo.
 */
-/*teste*/
 void macros(){
     string novo_arq;
     int flag_teste = 0;
@@ -374,6 +282,180 @@ void macros(){
     cria_arquivo(nome_prog,".mcr",novo_arq);
 }
 
+/*
+    Funcao criada para fazer a primeira passada quando escolhida a opcao -o no programa
+    A primeira passada salva o contador nas posicoes e salva onde estao as labels alem de tratar alguns erros 
+*/
+void primeira_passada(){
+    int k = 0, comando = -1, text = 0, flag_label = 0;
+    set <char> chares = {'_', '-', ':', '+'};
+    for(int i = 0; i < tudo.size(); i++){
+        flag_label = 0;
+        for(int j = 0; j < tudo[i].size(); j++){
+            for(int k = 0; k < tudo[i][j].size(); k++){
+                if((tudo[i][j][k] < 48 || tudo[i][j][k] > 57) && (tudo[i][j][k] < 65 || tudo[i][j][k] > 90) && chares.find(tudo[i][j][k]) == chares.end()){
+                    string erro = "Erro Lexico: caractere especial\nLinha: ";
+                    erro += concat(tudo[i]) + '\n';
+                    erro = erro +  "Caractere detectado: " + tudo[i][j][k] +'\n';
+                    cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
+                    cria_arquivo("Log",".txt",erro);
+                    e = 1;
+                    return;
+                }
+            }
+            if(tudo[i][j] == "SECTION"){
+                if(tudo[i].size()-1 > j){
+                    if(tudo[i][j+1] == "TEXT")
+                        text++;
+                }
+                break;
+            }else if(tudo[i][j][tudo[i][j].size()-1]== ':'){
+                flag_label = 1;
+                if(tudo[i][j][0] >= 48 && tudo[i][j][0] <= 57){
+                    string erro = "Erro Lexico: numero iniciando um rotulo\n";
+                    erro += concat(tudo[i]);
+                    cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
+                    cria_arquivo("Log",".txt",erro);
+                    e = 1;
+                    return;
+                }
+                if(tudo[i][j] != ""){
+                    label_name.push_back(tudo[i][j].substr(0,tudo[i][j].size()-1));
+                    tabela_simbolos[tudo[i][j].substr(0,tudo[i][j].size()-1)] = k;
+                }
+            }else if(comando == -1){
+                int ver;
+                if(flag_label)
+                    ver = tudo[i].size()-1;
+                else
+                    ver = tudo[i].size();
+
+                if(opcode.find(tudo[i][j]) == opcode.end()){
+                    string erro = "Erro Sintatico: instrucao ou diretiva inexistente no escopo do programa\nLinha: ";
+                    erro += concat(tudo[i]);
+                    cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
+                    cria_arquivo("Log",".txt",erro);
+                    e = 1;
+                    return;
+                }
+                else if((tudo[i][j] == "SPACE" && (tudo[i].size() != 3 && tudo[i].size() != 2)) || 
+                        (tudo[i][j] == "CONST" && tudo[i].size() != 3) || 
+                        ((tudo[i][j] != "CONST" && tudo[i][j] != "SPACE") && ver != opcode[tudo[i][j]].second)){
+
+                    string erro = "Erro Semântico: quantidade de argumentos errada\nLinha: ";
+                    erro += concat(tudo[i]);
+                    cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
+                    cria_arquivo("Log",".txt",erro);
+                    e = 1;
+                    return;
+                }
+                contador.push_back(k);
+                pair<int,int> soma = opcode.find(tudo[i][j])->second;
+                if(soma.second == -1){
+                    if(i == tudo.size()-1 || j == tudo[i].size()-1){
+                        k += 1;
+                    }else{
+                        k += stoi(tudo[i][j+1], nullptr, 10);
+                    }
+                }else{
+                    k += soma.second;
+                }
+                comando = 1;
+            }
+        }
+        comando = -1;
+    }
+    if(text == 0){
+        string erro = "Erro Sintatico: secao text nao existe no programa\nLinha: ";
+        cout << "Erro salvo em Log.txt na pasta do programa\n";
+        cria_arquivo("Log",".txt",erro);
+        e = 1;
+        return;
+    }
+}
+
+/*
+    Verifica os enderecos chamados na funcao cria o ponto obj se nao houverem erros 
+*/
+void segunda_passada(){
+    for(int i = 0; i < tudo.size(); i++){
+        vector<int> aux = {};
+        int comando = 0;
+        for(int j = 0; j < tudo[i].size(); j++){
+            if(tudo[i][j] == "SECTION"){
+                break;
+            }else if(tudo[i][j][tudo[i][j].size()-1]== ':'){
+
+            }else if(comando == 0){
+                pair<int,int> soma = opcode.find(tudo[i][j])->second;
+                if(soma.first == -1){
+                    int k = stoi(tudo[i][j+1], nullptr, 10);
+                    objeto += tudo[i][j+1] + " ";
+                    aux.push_back(k);
+                    break;
+                }else{
+                    if(soma.second == -1){
+                        if(j == tudo[i].size()-1){
+                            objeto += "0 ";
+                            aux.push_back(0);
+                        }else{
+                            for(int k = 0; k < stoi(tudo[i][j+1], nullptr, 10); k++){
+                                aux.push_back(0);
+                                objeto += "0 ";
+                            }
+                        }
+                        break;
+                    }else{
+                        aux.push_back(soma.first);
+                        objeto += to_string(soma.first) + " ";
+                    }
+                }
+                comando = 1;
+            }else if(tudo[i][j] != ""){
+                if(tabela_simbolos.find(tudo[i][j]) == tabela_simbolos.end()){
+                    string aux_rotulo = "", aux_numero = "";
+                    int aux_mais = 0;
+                    for(int k = 0; k < tudo[i][j].size(); k++){
+                        if(tudo[i][j][k] == '+'){
+                            aux_mais = 1;
+                        }
+                        if(aux_mais == 0){
+                            aux_rotulo += tudo[i][j][k];
+                        }else if(tudo[i][j][k] != '+'){
+                            aux_numero += tudo[i][j][k];
+                        }
+                    }
+                    if(tabela_simbolos.find(aux_rotulo) == tabela_simbolos.end()){
+                        string erro = "Erro Semântico: rotulo/dado nao definido no programa\nLinha: ";
+                        erro += concat(tudo[i]);
+                        cout << erro << "Erro salvo em Log.txt na pasta do programa\n";
+                        cria_arquivo("Log",".txt",erro);
+                        e = 1;
+                        return;
+                    }else{
+                        int valor_rotulo = 0;
+                        valor_rotulo = tabela_simbolos[aux_rotulo];
+                        valor_rotulo = valor_rotulo + stoi(aux_numero, nullptr, 10);
+                        objeto += to_string(valor_rotulo) + " ";
+                        aux.push_back(valor_rotulo);
+                    }    
+                }
+                else{
+                    objeto += to_string(tabela_simbolos[tudo[i][j]]) + " ";
+                    aux.push_back(tabela_simbolos[tudo[i][j]]);
+                }
+            }
+        }
+        codiu_final.push_back(aux);
+    }
+    cria_arquivo(nome_prog,".obj",objeto);
+}
+
+/*
+    A main faz o tratamento da entrada do programa, escolhendo as funcoes para rodar e o tipo de arquivo a ser pego
+    caso aconteca algum erro em -o uma flag eh acionada e ao ter o return na funcao e voltar para a main se a flag eh 0 
+    o programa encerra salvando o Log.txt
+*/
 int main(int argc, char *argv[]){
     FILE *program;
     nome_prog = argv[2];
@@ -383,25 +465,26 @@ int main(int argc, char *argv[]){
         string path = string(argv[2])+".asm";
         strcpy(num, path.c_str());
         program = fopen(num, "rt");
-        prog(program);
+        prog(program, 1);
         pre_processamento();
     }
     else if(string(argv[1]) == "-m"){
         string path = string(argv[2])+".pre";
         strcpy(num, path.c_str());
         program = fopen(num, "rt");
-        prog(program);
+        prog(program, 2);
         macros();
     }
     else if(string(argv[1]) == "-o"){
         string path = string(argv[2])+".mcr";
         strcpy(num, path.c_str());
         program = fopen(num, "rt");
-        prog(program);
-        if (e) return 1;
+        prog(program, 3);
+        if (e) return 0;
         primeira_passada();
-        if (e) return 1;
+        if (e) return 0;
+        cout << " a";
         segunda_passada();
-        if (e) return 1;
+        if (e) return 0;
     }
 }
