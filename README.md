@@ -1,5 +1,3 @@
-
-
 # Montador
 
 O Montador foi criado usando a linguagem C++, esse montador, traduz um código em assembly(um pouco mais simplificado, gerado para a aplicação a diciplina Software Básico) para linguagem de máquina.
@@ -8,8 +6,8 @@ O Montador foi criado usando a linguagem C++, esse montador, traduz um código e
 A aplicação foi desenvolvida utilizando a linguagem C++.
 Para compilar e executar o sistema:
 
-- G++ version ...
-- Linux version ...
+- G++ version 11.3.0
+- Linux version Ubuntu 22.04
 
 ## Execução
 Após a compilação o  executável deve ser chamado de MONTADOR. E deve ter 3 modos de uso. Deve ser possível chamar por linha de comando da seguinte forma: .montador -<op> <arquivo>
@@ -17,11 +15,8 @@ Após a compilação o  executável deve ser chamado de MONTADOR. E deve ter 3 m
   O arquivo de entrada deve ser indicado SEM extensão e o arquivo de saída deve MANTER o mesmo nome e mudar a extensão. Deve existir 3 formas de operação:
   - -p: A extensão de saída deve ser .PRE e somente deve se processar EQU e IF.
   - -m: A extensão da daída deve ser .MCR e somente deve se processar MACROS. A entrada vai ser a saída pré-processada.
-  - -o: A extensão da saída deve ser OBJ e deve seguir o formato indicado anteriormente. A entrada vai ser a saída das Macros.
+  - -o: A extensão da saída deve ser .OBJ e deve seguir o formato indicado anteriormente. A entrada vai ser a saída das Macros.
   
-## Especificação
-
-
 
 ## Requisitos do projeto
 
@@ -38,9 +33,12 @@ Após a compilação o  executável deve ser chamado de MONTADOR. E deve ter 3 m
  ### Verificações
   
   - Dois rótulos na mesma linha.
-  - Rótudo não definido.
+  - Rótulo não definido.
   - Dado não definido.
   - Quantidade de argumentos errada.
   - Seção TEXT faltante.
   - Erros léxicos (caracteres especiais ou números inicial nos rótulos).
   
+## Especificação Completa em PDF
+
+https://drive.google.com/file/d/1a_uSVcKNnAD7KsLIsG1SDBCKc45afvCg/view?usp=sharing
